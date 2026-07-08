@@ -22,6 +22,9 @@ services:
     volumes:
       - /run/systemd:/run/systemd:ro
       - /etc/systemd/system:/host/etc/systemd/system:ro
+      - /home:/host/home:ro
+      - /opt:/host/opt:ro
+      - /srv:/host/srv:ro
       - /var/log/journal:/host/var/log/journal:ro
     networks:
       - internal
