@@ -14,3 +14,9 @@
 - Implemented first-admin bootstrap.
 - Implemented BCrypt login, session persistence, signed session cookies, logout, `/auth/me`, password change, and RBAC guard primitives.
 - Verified auth round trip through Nginx.
+- Added and enabled host Nginx deployment for `scc.liems.io.vn` proxying to `127.0.0.1:18080`.
+- Rebound Docker gateway to loopback with `PUBLIC_BIND_ADDRESS=127.0.0.1`.
+- Verified domain virtual host locally and by forced public-IP resolution.
+- Issued and deployed Let's Encrypt HTTPS for `scc.liems.io.vn`.
+- Verified `https://scc.liems.io.vn`, `/api/health`, and Certbot renewal dry-run.
+- Rewrote README deployment and operations instructions.
