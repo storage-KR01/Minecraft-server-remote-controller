@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator';
+import { Audit } from '../audit/audit.decorator';
 import { ServerOrchestrationService } from './server-orchestration.service';
 
 type LockModeBody = {
@@ -18,20 +19,30 @@ export class SystemdController {
 
   @Post('system/lock-mode')
   @Roles('Admin')
+  @Audit({ action: 'system:lock_mode_changed', targetType: 'system' })
   async setLockMode(@Body() body: LockModeBody) {
     return this.orchestration.setLockMode(body.mode);
   }
 
   @Post('servers/:id/start')
   @Roles('Admin', 'Operator')
+  @Audit({ action: 'server:start', targetType: 'server', targetIdParam: 'id' })
   async startServer(@Param('id') id: string) {
     return this.orchestration.startServer(id);
   }
 
   @Post('servers/:id/stop')
   @Roles('Admin', 'Operator')
+  @Audit({ action: 'server:stop', targetType: 'server', targetIdParam: 'id' })
   async stopServer(@Param('id') id: string) {
     return this.orchestration.stopServer(id);
+  }
+
+  @Post('servers/:id/restart')
+  @Roles('Admin', 'Operator')
+  @Audit({ action: 'server:restart', targetType: 'server', targetIdParam: 'id' })
+  async restartServer(@Param('id') id: string) {
+    return this.orchestration.restartServer(id);
   }
 
   @Get('servers/:id/status')

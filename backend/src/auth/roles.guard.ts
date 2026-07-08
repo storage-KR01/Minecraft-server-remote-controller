@@ -7,6 +7,12 @@ import { Role, ROLES_KEY } from './roles.decorator';
 
 type CookieRequest = Request & {
   cookies?: Record<string, string>;
+  user?: {
+    id: string;
+    username: string;
+    role: Role;
+    mustChangePassword: boolean;
+  };
 };
 
 @Injectable()
@@ -31,12 +37,14 @@ export class RolesGuard implements CanActivate {
       context.getClass()
     ]);
 
+    const request = context.switchToHttp().getRequest<CookieRequest>();
+    const user = await this.auth.validateSession(request.cookies?.scc_session);
+    request.user = user;
+
     if (!requiredRoles?.length) {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<CookieRequest>();
-    const user = await this.auth.validateSession(request.cookies?.scc_session);
     return requiredRoles.includes(user.role);
   }
 }

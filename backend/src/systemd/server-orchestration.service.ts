@@ -19,6 +19,7 @@ export class ServerOrchestrationService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    await this.ensureStateSchema();
     const state = await this.getState();
     if (!state.active_server_id) {
       return;
@@ -82,6 +83,26 @@ export class ServerOrchestrationService implements OnModuleInit {
     };
   }
 
+  async restartServer(serverId: string) {
+    const server = await this.discovery.getById(serverId);
+    const state = await this.getState();
+
+    if (state.lock_mode === 'locked' && state.active_server_id && state.active_server_id !== serverId) {
+      throw new ConflictException(
+        `Server '${state.active_server_id}' đang chạy. Tắt trước khi restart server khác.`
+      );
+    }
+
+    await this.systemd.run('restart', server.systemdUnit);
+    await this.database.query('UPDATE system_state SET active_server_id = $1, updated_at = now() WHERE id = 1', [serverId]);
+
+    return {
+      status: 'restarted',
+      serverId,
+      systemdUnit: server.systemdUnit
+    };
+  }
+
   async status(serverId: string) {
     const server = await this.discovery.getById(serverId);
     const result = await this.systemd.status(server.systemdUnit);
@@ -116,5 +137,37 @@ export class ServerOrchestrationService implements OnModuleInit {
     }
 
     return row;
+  }
+
+  private async ensureStateSchema() {
+    await this.database.withTransaction(async (client) => {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS servers (
+          id text PRIMARY KEY,
+          path text NOT NULL,
+          display_name text NOT NULL,
+          game_port integer,
+          rcon_port integer,
+          rcon_password_enc text,
+          systemd_unit text NOT NULL UNIQUE,
+          last_scanned_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS system_state (
+          id smallint PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+          active_server_id text REFERENCES servers(id) ON DELETE SET NULL,
+          lock_mode text NOT NULL DEFAULT 'locked' CHECK (lock_mode IN ('locked', 'unlocked')),
+          updated_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+
+      await client.query(`
+        INSERT INTO system_state (id)
+        VALUES (1)
+        ON CONFLICT (id) DO NOTHING
+      `);
+    });
   }
 }

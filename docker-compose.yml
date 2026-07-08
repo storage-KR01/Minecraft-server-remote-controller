@@ -20,6 +20,7 @@ services:
     depends_on:
       - postgres
     volumes:
+      - ./:/workspace/server-control-center:rw
       - /run/systemd:/run/systemd:ro
       - /etc/systemd/system:/host/etc/systemd/system:ro
       - /home:/host/home:ro

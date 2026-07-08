@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
 import { Roles } from './roles.decorator';
+import { Audit } from '../audit/audit.decorator';
 
 type LoginBody = {
   username: string;
@@ -37,6 +38,7 @@ export class AuthController {
 
   @Post('logout')
   @Roles('Admin', 'Operator', 'Viewer')
+  @Audit({ action: 'auth:logout', targetType: 'user' })
   async logout(@Req() request: CookieRequest, @Res({ passthrough: true }) response: Response) {
     await this.auth.logout(request.cookies?.scc_session);
     response.clearCookie('scc_session', { path: '/' });
@@ -54,6 +56,7 @@ export class AuthController {
 
   @Post('change-password')
   @Roles('Admin', 'Operator', 'Viewer')
+  @Audit({ action: 'auth:change_password', targetType: 'user' })
   async changePassword(@Req() request: CookieRequest, @Body() body: ChangePasswordBody) {
     const user = await this.auth.validateSession(request.cookies?.scc_session);
     await this.auth.changePassword(user.id, body.currentPassword, body.newPassword);
